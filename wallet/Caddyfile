@@ -1,0 +1,14 @@
+http://localhost {
+
+	# Set this path to your site's directory.
+	root * /srv/wallet/public
+
+	# Enable the static file server.
+	file_server
+
+	# GZIP
+	encode gzip
+
+	# Or serve a PHP site through php-fpm:
+	php_fastcgi localhost:9000
+}
