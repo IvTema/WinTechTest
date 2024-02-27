@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->integer('user_id');
             $table->string('transaction_type');
-            $table->integer('ammount');
+            $table->integer('amount');
             $table->string('currency');
             $table->string('issue');
             $table->timestamps();
