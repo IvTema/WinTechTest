@@ -1,0 +1,3 @@
+http://localhost, http://mm.local {
+	reverse_proxy app:9000
+}
