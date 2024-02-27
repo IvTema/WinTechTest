@@ -14,6 +14,12 @@ USER ${PHPUSER}
 
 RUN apt-get update -y && docker-php-ext-install pdo_mysql
 
+RUN apt-get update && apt-get install -y git
+
+RUN  apt-get install -y \
+    libzip-dev \
+    && docker-php-ext-install zip  && docker-php-ext-enable zip
+
 RUN docker-php-ext-configure opcache --enable-opcache && docker-php-ext-install opcache
 
 COPY opcache.ini /usr/local/etc/php/conf.d/opcache.ini
