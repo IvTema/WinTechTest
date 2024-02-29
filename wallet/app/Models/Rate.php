@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property integer $id
- * @property integer $rate
+ * @property float $rub_rate
  * @property string $created_at
  * @property string $updated_at
  */
@@ -18,5 +18,12 @@ class Rate extends Model
     /**
      * @var array
      */
-    protected $fillable = ['rate'];
+    protected $fillable = ['rub_rate'];
+
+
+    public function getCurrentRate(): Rate
+    {
+        $latestRateModel = $this->latest('id')->first();
+        return $latestRateModel;
+    }
 }

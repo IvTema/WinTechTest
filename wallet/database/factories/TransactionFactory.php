@@ -17,7 +17,7 @@ class TransactionFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id'=> rand(1,15),
+            'balance_id'=> rand(1,15),
             'transaction_type'=> $this->faker->randomElement(['debit', 'credit']),
             'amount'=> rand(1,2000),
             'currency'=> $this->faker->randomElement(['usd', 'rub']),
