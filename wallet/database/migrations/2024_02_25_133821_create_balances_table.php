@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('balances', function (Blueprint $table) {
             $table->id();
-            $table->integer('usd');
+            $table->float('usd');
             $table->timestamps();
         });
     }

@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\UserAuthController;
+use App\Http\Controllers\Api\V1\BalanceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,4 +18,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+
+Route::group(['prefix' => 'v1', 'as' => 'api.v1.', 'namespace' => 'Api\V1'], function () {
+  Route::post('register',[UserAuthController::class,'register']);
+  Route::post('login',[UserAuthController::class,'login']);
+  Route::post('logout',[UserAuthController::class,'logout'])->middleware('auth:sanctum');
+
+  Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('balance/info', [BalanceController::class, 'index']);
+    Route::get('balance/update', [BalanceController::class, 'update']);
+  });
 });
