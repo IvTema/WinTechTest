@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Helpers\ResponseHelper;
 use App\Helpers\TransactionHelper;
 use App\Helpers\ValidationHelper;
 use App\Http\Controllers\Controller;
@@ -16,52 +17,40 @@ class BalanceController extends Controller
 {
     public static function index(Request $request)
     {
-        $validator = Validator::make($request->all(), ValidationHelper::getBalanceUpdateRules());
+        $validator = Validator::make($request->all(), ValidationHelper::getIndexRules());
+        $validationResponse = ValidationHelper::validateOrDropError($validator);
+        if ($validationResponse !== null) {
+            return $validationResponse;
+        } 
 
-        if ($validator->fails()) {
-            return response()->json([
-                'error' => 'Bad Request',
-                'message' => 'Invalid data provided',
-            ], 400);
-        }
-        else {
-            $validated = $validator->validated();
+        $validatedData = $validator->validated();
+        $requiredID[] = ['id', $validatedData['id']];
+        $query = Balance::find($requiredID);
+        $checker = ResponseHelper::checkOrDropError($query);
+        if ($checker !== null) {
+            return $checker;
+        } 
 
-            $requiredID[] = ['id', $validated['id']];
-
-            $query = Balance::find($requiredID);
-
-            if ($query->count() === 0) {
-            return response()->json([
-                'error' => 'Not found',
-                'message' => 'Data not provided',
-            ], 404);
-            }
-
-            return new BalanceStatusCollection($query);
-        }
+        return new BalanceStatusCollection($query);
+        
     }
 
     public static function update(Request $request)
     {
-        $validator = Validator::make($request->all(), ValidationHelper::getBalanceUpdateRules());
+        $validator = Validator::make($request->all(), ValidationHelper::getUpdateRules());
+        $validationResponse = ValidationHelper::validateOrDropError($validator);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'error' => 'Bad Request',
-                'message' => 'Invalid data provided',
-            ], 400);
-        }
+        if ($validationResponse !== null) {
+            return $validationResponse;
+        } 
         
         $validated = $validator->validated();
 
         $balance = Balance::find($validated['id']);
-        if ($balance->count() === 0) {
-            return response()->json([
-                'error' => 'Not found',
-                'message' => 'Data not provided',
-            ], 404);
-            }
+        $checker = ResponseHelper::checkOrDropError($balance);
+        if ($checker !== null) {
+            return $checker;
+        } 
 
         $transactionData = TransactionHelper::transformToTransactionArray($validated);
 
@@ -77,8 +66,10 @@ class BalanceController extends Controller
 
         if($validated['transaction']=='debit'){
             $balance->usd = $balance->usd + $convertedAmmount;
-        } elseif ($validated['transaction']=='credit'){
+        } elseif ($validated['transaction']=='credit' && ($balance->usd - $convertedAmmount) > 0){
             $balance->usd = $balance->usd - $convertedAmmount;
+        } else {
+            return ResponseHelper::InsufficientBalanceError();
         }
 
         // DB Transaction secure
@@ -90,11 +81,8 @@ class BalanceController extends Controller
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-
-            return response()->json([
-                'error' => 'Internal Server Error',
-                'message' => 'Failed to update balance. Please try again later.',
-            ], 500);
+            
+            return ResponseHelper::ServerBdError();
         }
 
         return TransactionHelper::createTransactionResponse($transaction, $balance);
