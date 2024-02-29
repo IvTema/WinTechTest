@@ -17,7 +17,7 @@ class BalanceFactory extends Factory
     public function definition(): array
     {
         return [            
-            'usd' => rand(10,2000),
+            'usd' => rand(10,10000),
         ];
     }
 }

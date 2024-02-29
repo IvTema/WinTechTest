@@ -17,7 +17,7 @@ class RateFactory extends Factory
     public function definition(): array
     {
         return [
-            'rub_rate' => 98,
+            'rub_rate' => rand(90,100),
         ];
     }
 }
