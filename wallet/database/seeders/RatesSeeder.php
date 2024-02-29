@@ -14,7 +14,7 @@ class RatesSeeder extends Seeder
     public function run(): void
     {
         Rate::factory()
-            ->count(1)
+            ->count(3)
             ->create();
     }
 }

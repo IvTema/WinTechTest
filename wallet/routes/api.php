@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\UserAuthController;
 use App\Http\Controllers\Api\V1\BalanceController;
+use App\Http\Controllers\Api\V1\RefundController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,5 +30,7 @@ Route::group(['prefix' => 'v1', 'as' => 'api.v1.', 'namespace' => 'Api\V1'], fun
   Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('balance/info', [BalanceController::class, 'index']);
     Route::get('balance/update', [BalanceController::class, 'update']);
+
+    Route::get('refund', [RefundController::class, 'index']);
   });
 });
