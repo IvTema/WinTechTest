@@ -84,9 +84,7 @@ FROM transactions
 WHERE issue = 'refund'
 AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY);
 ```
-
-
-
+ ----------------
 **Project includes phpMyAdmin, accessible via URL: [http://localhost:8081/](http://localhost:8081/)**
-- **Login:** sail
-- **Password:** 0000
+- Login: sail
+- Password: 0000
