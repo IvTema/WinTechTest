@@ -11,7 +11,8 @@ class RefundController extends Controller{
       SELECT SUM(amount) AS total_refund_amount
       FROM transactions
       WHERE issue = 'refund'
-      AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY);
+      AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+      LIMIT 500;
       ");
 
       return $refunds;
