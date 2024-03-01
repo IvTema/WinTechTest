@@ -82,7 +82,8 @@ Write an SQL query that returns the sum received due to a refund in the last 7 d
 SELECT SUM(amount) AS total_refund_amount
 FROM transactions
 WHERE issue = 'refund'
-AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY);
+AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+LIMIT 500;
 ```
  ----------------
 **Project includes phpMyAdmin, accessible via URL: [http://localhost:8081/](http://localhost:8081/)**
