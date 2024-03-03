@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Helpers\ResponseHelper;
 use App\Helpers\TransactionHelper;
 use App\Helpers\ValidationHelper;
+use App\Helpers\ValidationUpdateRuleHelper;
+use App\Helpers\ValidationIndexRuleHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\BalanceStatusCollection;
 use App\Models\Balance;
@@ -13,41 +15,40 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
+
 class BalanceController extends Controller
 {
     public static function index(Request $request)
     {
-        $validator = Validator::make($request->all(), ValidationHelper::getIndexRules());
+        $indexRuleHelper = new ValidationIndexRuleHelper();
+        $validator = Validator::make($request->all(), $indexRuleHelper->getRules());
         $validationResponse = ValidationHelper::validateOrDropError($validator);
         if ($validationResponse !== null) {
             return $validationResponse;
         } 
+        $validated = $validator->validated();
 
-        $validatedData = $validator->validated();
-        $requiredID[] = ['id', $validatedData['id']];
-        $query = Balance::find($requiredID);
+        $query = Balance::find($validated);
         $checker = ResponseHelper::checkOrDropError($query);
         if ($checker !== null) {
             return $checker;
         } 
 
         return new BalanceStatusCollection($query);
-        
     }
 
     public static function update(Request $request)
     {
-        $validator = Validator::make($request->all(), ValidationHelper::getUpdateRules());
+        $updateRuleHelper = new ValidationUpdateRuleHelper();
+        $validator = Validator::make($request->all(), $updateRuleHelper->getRules());
         $validationResponse = ValidationHelper::validateOrDropError($validator);
-
         if ($validationResponse !== null) {
             return $validationResponse;
         } 
-        
         $validated = $validator->validated();
 
-        $balance = Balance::find($validated['id']);
-        $checker = ResponseHelper::checkOrDropError($balance);
+        $query = Balance::find($validated['id']);
+        $checker = ResponseHelper::checkOrDropError($query);
         if ($checker !== null) {
             return $checker;
         } 
@@ -65,9 +66,9 @@ class BalanceController extends Controller
         }
 
         if($validated['transaction']=='debit'){
-            $balance->usd = $balance->usd + $convertedAmmount;
-        } elseif ($validated['transaction']=='credit' && ($balance->usd - $convertedAmmount) > 0){
-            $balance->usd = $balance->usd - $convertedAmmount;
+            $query->usd = $query->usd + $convertedAmmount;
+        } elseif ($validated['transaction']=='credit' && ($query->usd - $convertedAmmount) > 0){
+            $query->usd = $query->usd - $convertedAmmount;
         } else {
             return ResponseHelper::InsufficientBalanceError();
         }
@@ -75,8 +76,8 @@ class BalanceController extends Controller
         // DB Transaction secure
         DB::beginTransaction();
         try {
-            $transaction = $balance->newTransaction($transactionData);
-            $balance->save();
+            $transaction = $query->newTransaction($transactionData);
+            $query->save();
 
             DB::commit();
         } catch (\Exception $e) {
@@ -85,6 +86,6 @@ class BalanceController extends Controller
             return ResponseHelper::ServerBdError();
         }
 
-        return TransactionHelper::createTransactionResponse($transaction, $balance);
+        return TransactionHelper::createTransactionResponse($transaction, $query);
     }
 }
