@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Helpers\ResponseHelper;
 use App\Helpers\TransactionHelper;
 use App\Helpers\ValidationHelper;
+use App\Helpers\ValidationUpdateRuleHelper;
+use App\Helpers\ValidationIndexRuleHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\BalanceStatusCollection;
 use App\Models\Balance;
@@ -18,7 +20,8 @@ class BalanceController extends Controller
 {
     public static function index(Request $request)
     {
-        $validator = Validator::make($request->all(), ValidationHelper::getIndexRules());
+        $indexRuleHelper = new ValidationIndexRuleHelper();
+        $validator = Validator::make($request->all(), $indexRuleHelper->getRules());
         $validationResponse = ValidationHelper::validateOrDropError($validator);
         if ($validationResponse !== null) {
             return $validationResponse;
@@ -36,7 +39,8 @@ class BalanceController extends Controller
 
     public static function update(Request $request)
     {
-        $validator = Validator::make($request->all(), ValidationHelper::getUpdateRules());
+        $updateRuleHelper = new ValidationUpdateRuleHelper();
+        $validator = Validator::make($request->all(), $updateRuleHelper->getRules());
         $validationResponse = ValidationHelper::validateOrDropError($validator);
         if ($validationResponse !== null) {
             return $validationResponse;
