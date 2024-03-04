@@ -61,7 +61,7 @@ services:
           - sail
     redis:
         image: redis:latest
-        restart: always
+        # restart: always
         ports:
             - "6379:6379"
         volumes:
