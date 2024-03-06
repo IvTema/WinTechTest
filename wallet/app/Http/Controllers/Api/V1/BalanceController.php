@@ -8,10 +8,11 @@ use App\Helpers\ValidationHelper;
 use App\Helpers\ValidationUpdateRuleHelper;
 use App\Helpers\ValidationIndexRuleHelper;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\BalanceStatusCollection;
+use App\Http\Resources\BalanceStatusResource;
 use App\Models\Balance;
 use App\Models\Rate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -28,13 +29,16 @@ class BalanceController extends Controller
         } 
         $validated = $validator->validated();
 
-        $query = Balance::find($validated);
-        $checker = ResponseHelper::checkOrDropError($query);
+        $balance = Cache::rememberForever('balances:id_'.$validated['id'], function () use ($validated) {
+            return Balance::find($validated['id']);
+        });
+
+        $checker = ResponseHelper::checkOrDropError($balance);
         if ($checker !== null) {
             return $checker;
         } 
 
-        return new BalanceStatusCollection($query);
+        return new BalanceStatusResource($balance);
     }
 
     public static function update(Request $request)
@@ -47,8 +51,11 @@ class BalanceController extends Controller
         } 
         $validated = $validator->validated();
 
-        $query = Balance::find($validated['id']);
-        $checker = ResponseHelper::checkOrDropError($query);
+        $balance = Cache::rememberForever('balances:id_'.$validated['id'], function () use ($validated) {
+            return Balance::find($validated['id']);
+        });
+
+        $checker = ResponseHelper::checkOrDropError($balance);
         if ($checker !== null) {
             return $checker;
         } 
@@ -66,9 +73,9 @@ class BalanceController extends Controller
         }
 
         if($validated['transaction']=='debit'){
-            $query->usd = $query->usd + $convertedAmmount;
-        } elseif ($validated['transaction']=='credit' && ($query->usd - $convertedAmmount) > 0){
-            $query->usd = $query->usd - $convertedAmmount;
+            $balance->usd = $balance->usd + $convertedAmmount;
+        } elseif ($validated['transaction']=='credit' && ($balance->usd - $convertedAmmount) > 0){
+            $balance->usd = $balance->usd - $convertedAmmount;
         } else {
             return ResponseHelper::InsufficientBalanceError();
         }
@@ -76,8 +83,13 @@ class BalanceController extends Controller
         // DB Transaction secure
         DB::beginTransaction();
         try {
-            $transaction = $query->newTransaction($transactionData);
-            $query->save();
+            $transaction = $balance->newTransaction($transactionData);
+            $balance->save();
+
+            Cache::put('balances:id_'.$validated['id'], $balance);
+            Cache::rememberForever('transactions:id_'.$transaction->id, function () use ($transaction) {
+                return $transaction;
+            });
 
             DB::commit();
         } catch (\Exception $e) {
@@ -86,6 +98,6 @@ class BalanceController extends Controller
             return ResponseHelper::ServerBdError();
         }
 
-        return TransactionHelper::createTransactionResponse($transaction, $query);
+        return TransactionHelper::createTransactionResponse($transaction, $balance);
     }
 }
