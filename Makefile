@@ -14,7 +14,6 @@ down:
 	docker-compose down
 
 env_local:
-	cp ./env.local ./.env
 	cp ./env.local ./wallet/.env
 
 migrations:

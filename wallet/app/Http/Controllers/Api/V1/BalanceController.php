@@ -4,54 +4,47 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Helpers\ResponseHelper;
 use App\Helpers\TransactionHelper;
-use App\Helpers\ValidationHelper;
-use App\Helpers\ValidationUpdateRuleHelper;
-use App\Helpers\ValidationIndexRuleHelper;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\BalanceStatusCollection;
+use App\Http\Requests\IndexBalanceRequest;
+use App\Http\Requests\UpdateBalanceRequest;
+use App\Http\Resources\BalanceStatusResource;
 use App\Models\Balance;
 use App\Models\Rate;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Contracts\Cache\Repository as Cache;
+use Illuminate\Database\DatabaseManager as DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class BalanceController extends Controller
 {
-    public static function index(Request $request)
+    public static function index(IndexBalanceRequest $request, Cache $cache)
     {
-        $indexRuleHelper = new ValidationIndexRuleHelper();
-        $validator = Validator::make($request->all(), $indexRuleHelper->getRules());
-        $validationResponse = ValidationHelper::validateOrDropError($validator);
-        if ($validationResponse !== null) {
-            return $validationResponse;
-        } 
-        $validated = $validator->validated();
+        $validated = $request->validated();
 
-        $query = Balance::find($validated);
-        $checker = ResponseHelper::checkOrDropError($query);
-        if ($checker !== null) {
-            return $checker;
-        } 
+        $balance = $cache->rememberForever('balances:id_'.$validated['id'], function () use ($validated) {
+            try {
+                $balance = Balance::findOrFail($validated['id']);
+            } catch (ModelNotFoundException $e) {
+                throw new ModelNotFoundException('Balance not found');
+            }
+            return $balance;
+        });
 
-        return new BalanceStatusCollection($query);
+        return new BalanceStatusResource($balance);
     }
 
-    public static function update(Request $request)
+    public static function update(UpdateBalanceRequest $request, Cache $cache , DB $db)
     {
-        $updateRuleHelper = new ValidationUpdateRuleHelper();
-        $validator = Validator::make($request->all(), $updateRuleHelper->getRules());
-        $validationResponse = ValidationHelper::validateOrDropError($validator);
-        if ($validationResponse !== null) {
-            return $validationResponse;
-        } 
-        $validated = $validator->validated();
+        $validated = $request->validated();
 
-        $query = Balance::find($validated['id']);
-        $checker = ResponseHelper::checkOrDropError($query);
-        if ($checker !== null) {
-            return $checker;
-        } 
+        $balance = $cache->rememberForever('balances:id_'.$validated['id'], function () use ($validated) {
+            try {
+                $balance = Balance::findOrFail($validated['id']);
+            } catch (ModelNotFoundException $e) {
+                throw new ModelNotFoundException('Balance not found');
+            }
+            return $balance;
+        });
 
         $transactionData = TransactionHelper::transformToTransactionArray($validated);
 
@@ -66,26 +59,29 @@ class BalanceController extends Controller
         }
 
         if($validated['transaction']=='debit'){
-            $query->usd = $query->usd + $convertedAmmount;
-        } elseif ($validated['transaction']=='credit' && ($query->usd - $convertedAmmount) > 0){
-            $query->usd = $query->usd - $convertedAmmount;
+            $balance->usd = $balance->usd + $convertedAmmount;
+        } elseif ($validated['transaction']=='credit' && ($balance->usd - $convertedAmmount) > 0){
+            $balance->usd = $balance->usd - $convertedAmmount;
         } else {
-            return ResponseHelper::InsufficientBalanceError();
+            return ResponseHelper::createErrorResponse('Insufficient balance to perform the debit transaction.', 400);
         }
 
         // DB Transaction secure
-        DB::beginTransaction();
         try {
-            $transaction = $query->newTransaction($transactionData);
-            $query->save();
+            $transaction = $db->transaction(function () use ($balance, $transactionData, $cache, $validated) {
+                $transaction = $balance->newTransaction($transactionData);
+                $balance->save();
 
-            DB::commit();
+                $cache->put('balances:id_'.$validated['id'], $balance);
+                $cache->rememberForever('transactions:id_'.$transaction->id, function () use ($transaction) {
+                    return $transaction;
+                });
+                return $transaction;
+            });
         } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return ResponseHelper::ServerBdError();
+            throw new HttpException(500, 'Database error in balance update and transaction creation.');
         }
 
-        return TransactionHelper::createTransactionResponse($transaction, $query);
+        return TransactionHelper::createTransactionResponse($transaction, $balance);
     }
 }

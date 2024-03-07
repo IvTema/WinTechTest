@@ -2,7 +2,7 @@
 
 namespace App\Helpers;
 
-use App\Http\Resources\BalanceStatusCollection;
+use App\Http\Resources\BalanceStatusResource;
 
 class TransactionHelper
 {
@@ -15,7 +15,7 @@ class TransactionHelper
                 'amount' => $transaction->amount,
                 'currency' => $transaction->currency,
                 'issue' => $transaction->issue,
-                'balance' => new BalanceStatusCollection([$balance]),
+                'balance' => new BalanceStatusResource($balance),
             ],
         ]);
     }
