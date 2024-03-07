@@ -30,14 +30,14 @@ class Handler extends ExceptionHandler
     }
 
     public function render($request, Throwable $exception)
-{
-    if ($exception instanceof ModelNotFoundException) {
-        return response()->json([
-            'error' => 'Not found',
-            'message' => 'Data not provided',
-        ], 404);
-    }
+    {
+        if ($exception instanceof ModelNotFoundException) {
+            return response()->json([
+                'error' => 'Not found',
+                'message' => $exception->getMessage(),
+            ], 404);
+        }
 
-    return parent::render($request, $exception);
-}
+        return parent::render($request, $exception);
+    }
 }
