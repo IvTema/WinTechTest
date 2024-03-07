@@ -61,13 +61,10 @@ services:
           - sail
     redis:
         image: redis:latest
-        # restart: always
         ports:
             - "6379:6379"
         volumes:
             - 'sail-redis:/var/data/redis'
-            # - 'sail-redis-data:/var/data/redis'
-            # - 'sail-redis-conf:/var/conf/redis'
         environment:
             - REDIS_PASSWORD=my-password
             - REDIS_PORT=6379
@@ -80,5 +77,3 @@ volumes:
     caddy:
     sail-mysql:
     sail-redis:
-    # sail-redis-data:
-    # sail-redis-conf:

@@ -4,33 +4,29 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Helpers\ResponseHelper;
 use App\Helpers\TransactionHelper;
-use App\Helpers\ValidationHelper;
-use App\Helpers\ValidationUpdateRuleHelper;
-use App\Helpers\ValidationIndexRuleHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\IndexBalanceRequest;
+use App\Http\Requests\UpdateBalanceRequest;
 use App\Http\Resources\BalanceStatusResource;
 use App\Models\Balance;
 use App\Models\Rate;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 
 
 class BalanceController extends Controller
 {
-    public static function index(Request $request)
+    public static function index(IndexBalanceRequest $request)
     {
-        $indexRuleHelper = new ValidationIndexRuleHelper();
-        $validator = Validator::make($request->all(), $indexRuleHelper->getRules());
-        $validationResponse = ValidationHelper::validateOrDropError($validator);
-        if ($validationResponse !== null) {
-            return $validationResponse;
-        } 
-        $validated = $validator->validated();
+        $validated = $request->validated();
 
         $balance = Cache::rememberForever('balances:id_'.$validated['id'], function () use ($validated) {
-            return Balance::find($validated['id']);
+            $balance = Balance::find($validated['id']);
+            if ($balance === null) {
+                throw new ModelNotFoundException('Balance not found');
+            }
+            return $balance;
         });
 
         $checker = ResponseHelper::checkOrDropError($balance);
@@ -41,24 +37,17 @@ class BalanceController extends Controller
         return new BalanceStatusResource($balance);
     }
 
-    public static function update(Request $request)
+    public static function update(UpdateBalanceRequest $request)
     {
-        $updateRuleHelper = new ValidationUpdateRuleHelper();
-        $validator = Validator::make($request->all(), $updateRuleHelper->getRules());
-        $validationResponse = ValidationHelper::validateOrDropError($validator);
-        if ($validationResponse !== null) {
-            return $validationResponse;
-        } 
-        $validated = $validator->validated();
+        $validated = $request->validated();
 
         $balance = Cache::rememberForever('balances:id_'.$validated['id'], function () use ($validated) {
-            return Balance::find($validated['id']);
+            $balance = Balance::find($validated['id']);
+            if ($balance === null) {
+                throw new ModelNotFoundException('Balance not found');
+            }
+            return $balance;
         });
-
-        $checker = ResponseHelper::checkOrDropError($balance);
-        if ($checker !== null) {
-            return $checker;
-        } 
 
         $transactionData = TransactionHelper::transformToTransactionArray($validated);
 
