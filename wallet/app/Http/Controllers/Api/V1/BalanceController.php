@@ -22,8 +22,9 @@ class BalanceController extends Controller
         $validated = $request->validated();
 
         $balance = $cache->rememberForever('balances:id_'.$validated['id'], function () use ($validated) {
-            $balance = Balance::find($validated['id']);
-            if ($balance === null) {
+            try {
+                $balance = Balance::findOrFail($validated['id']);
+            } catch (ModelNotFoundException $e) {
                 throw new ModelNotFoundException('Balance not found');
             }
             return $balance;
@@ -37,8 +38,9 @@ class BalanceController extends Controller
         $validated = $request->validated();
 
         $balance = $cache->rememberForever('balances:id_'.$validated['id'], function () use ($validated) {
-            $balance = Balance::find($validated['id']);
-            if ($balance === null) {
+            try {
+                $balance = Balance::findOrFail($validated['id']);
+            } catch (ModelNotFoundException $e) {
                 throw new ModelNotFoundException('Balance not found');
             }
             return $balance;
