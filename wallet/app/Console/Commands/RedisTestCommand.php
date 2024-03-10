@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Transaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
+use Symfony\Component\HttpKernel\Attribute\Cache as AttributeCache;
 
 class RedisTestCommand extends Command
 {
@@ -27,6 +28,14 @@ class RedisTestCommand extends Command
      */
     public function handle()
     {
+        $before = microtime(true);
+        $transactions = Transaction::all();
+        // Cache::put('transactions:all', $transactions);
+        // Cache::get('transactions:all');
+        $after = microtime(true);
+
+        dd($after - $before);
+
         // $str = 'some_string';
         // $result = Cache::remember('my_string', 60*60, function () use ($str){  // remeberForever() if you want to store it forever
         //     return $str;

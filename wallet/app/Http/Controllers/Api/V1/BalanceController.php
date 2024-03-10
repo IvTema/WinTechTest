@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Helpers\ResponseHelper;
 use App\Helpers\TransactionHelper;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\IndexBalanceRequest;
-use App\Http\Requests\UpdateBalanceRequest;
+use App\Http\Requests\Balance\ShowRequest;
+use App\Http\Requests\Balance\UpdateRequest;
 use App\Http\Resources\BalanceStatusResource;
 use App\Models\Balance;
 use App\Models\Rate;
@@ -17,10 +17,10 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class BalanceController extends Controller
 {
-    public static function index(IndexBalanceRequest $request, Cache $cache)
+    public static function show(ShowRequest $request, Cache $cache)
     {
         $validated = $request->validated();
-
+    
         $balance = $cache->rememberForever('balances:id_'.$validated['id'], function () use ($validated) {
             try {
                 $balance = Balance::findOrFail($validated['id']);
@@ -29,11 +29,11 @@ class BalanceController extends Controller
             }
             return $balance;
         });
-
+    
         return new BalanceStatusResource($balance);
     }
 
-    public static function update(UpdateBalanceRequest $request, Cache $cache , DB $db)
+    public static function update(UpdateRequest $request, Cache $cache , DB $db)
     {
         $validated = $request->validated();
 

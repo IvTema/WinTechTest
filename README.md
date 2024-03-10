@@ -55,7 +55,7 @@ Write an SQL query that returns the sum received due to a refund in the last 7 d
 2. **Retrieving Wallet Balance by ID:**
 
     ```bash
-    curl --location 'localhost/api/v1/balance/info/?id=2' \
+    curl --location 'localhost/api/v1/balance/5' \
     --header 'Accept: application/json' \
     --header 'Authorization: Bearer #PLACE FOR TOKEN#'
     ```
@@ -63,7 +63,7 @@ Write an SQL query that returns the sum received due to a refund in the last 7 d
 3. **Changing Balance and Recording Transactions:**
 
     ```bash
-    curl --location 'localhost/api/v1/balance/update/?transaction=debit&currency=rub&amount=96&issue=renunciation&id=2' \
+    curl --location --request PUT 'localhost/api/v1/balance/5/?transaction=credit&currency=rub&amount=200&issue=renunciation' \
     --header 'Accept: application/json' \
     --header 'Authorization: Bearer #PLACE FOR TOKEN#'
     ```

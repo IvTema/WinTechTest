@@ -22,15 +22,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 
-Route::group(['prefix' => 'v1', 'as' => 'api.v1.', 'namespace' => 'Api\V1'], function () {
-  Route::post('register',[UserAuthController::class,'register']);
-  Route::post('login',[UserAuthController::class,'login']);
-  Route::post('logout',[UserAuthController::class,'logout'])->middleware('auth:sanctum');
+Route::group(['prefix' => 'v1', 'as' => 'api.v1.', 'namespace' => 'App\Http\Controllers\Api\V1'], function () {
+    Route::post('register',[UserAuthController::class,'register']);
+    Route::post('login',[UserAuthController::class,'login']);
+    Route::post('logout',[UserAuthController::class,'logout'])->middleware('auth:sanctum');
+    
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::resource('balance', BalanceController::class)->only([
+            'show', 'update'
+        ]);
 
-  Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('balance/info', [BalanceController::class, 'index']);
-    Route::get('balance/update', [BalanceController::class, 'update']);
-
-    Route::get('refund', [RefundController::class, 'index']);
-  });
+        Route::get('refund', [RefundController::class, 'index']);
+    });
 });
