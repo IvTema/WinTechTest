@@ -10,13 +10,19 @@ use App\Http\Requests\UpdateBalanceRequest;
 use App\Http\Resources\BalanceStatusResource;
 use App\Models\Balance;
 use App\Models\Rate;
+use App\Services\BalanceUpdateService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Contracts\Cache\Repository as Cache;
-use Illuminate\Database\DatabaseManager as DB;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class BalanceController extends Controller
 {
+    protected $balanceUpdateService;
+
+    public function __construct(BalanceUpdateService $balanceUpdateService)
+    {
+        $this->balanceUpdateService = $balanceUpdateService;
+    }
+
     public static function index(IndexBalanceRequest $request, Cache $cache)
     {
         $validated = $request->validated();
@@ -33,7 +39,7 @@ class BalanceController extends Controller
         return new BalanceStatusResource($balance);
     }
 
-    public static function update(UpdateBalanceRequest $request, Cache $cache , DB $db)
+    public function update(UpdateBalanceRequest $request, Cache $cache)
     {
         $validated = $request->validated();
 
@@ -53,7 +59,7 @@ class BalanceController extends Controller
 
         if($transactionData['currency']!='usd'){
             $currentRateValue = $currentRate->{$validated['currency']."_rate"};
-            $convertedAmmount = floatval($validated['amount']) / $currentRateValue ;
+            $convertedAmmount = intval($validated['amount']) / $currentRateValue ;
         } else {
             $convertedAmmount = $validated['amount'];
         }
@@ -67,20 +73,7 @@ class BalanceController extends Controller
         }
 
         // DB Transaction secure
-        try {
-            $transaction = $db->transaction(function () use ($balance, $transactionData, $cache, $validated) {
-                $transaction = $balance->newTransaction($transactionData);
-                $balance->save();
-
-                $cache->put('balances:id_'.$validated['id'], $balance);
-                $cache->rememberForever('transactions:id_'.$transaction->id, function () use ($transaction) {
-                    return $transaction;
-                });
-                return $transaction;
-            });
-        } catch (\Exception $e) {
-            throw new HttpException(500, 'Database error in balance update and transaction creation.');
-        }
+        $transaction = $this->balanceUpdateService->createTransaction($balance, $transactionData, $validated);
 
         return TransactionHelper::createTransactionResponse($transaction, $balance);
     }
