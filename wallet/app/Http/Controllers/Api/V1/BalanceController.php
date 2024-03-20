@@ -9,18 +9,23 @@ use App\Http\Requests\IndexBalanceRequest;
 use App\Http\Requests\UpdateBalanceRequest;
 use App\Http\Resources\BalanceStatusResource;
 use App\Models\Balance;
-use App\Models\Rate;
 use App\Services\BalanceUpdateService;
+use App\Services\ConvertService;
+use App\Services\OperationService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Contracts\Cache\Repository as Cache;
 
 class BalanceController extends Controller
 {
     protected $balanceUpdateService;
+    protected $convertService;
+    protected $operationService;
 
-    public function __construct(BalanceUpdateService $balanceUpdateService)
+    public function __construct(BalanceUpdateService $balanceUpdateService, ConvertService $convertService, OperationService $operationService)
     {
         $this->balanceUpdateService = $balanceUpdateService;
+        $this->convertService = $convertService;
+        $this->operationService = $operationService;
     }
 
     public static function index(IndexBalanceRequest $request, Cache $cache)
@@ -54,22 +59,12 @@ class BalanceController extends Controller
 
         $transactionData = TransactionHelper::transformToTransactionArray($validated);
 
-        $rate = new Rate();
-        $currentRate = $rate->getCurrentRate();
+        $convertedAmount = $this->convertService->convertCurrency($transactionData, $validated);
 
-        if($transactionData['currency']!='usd'){
-            $currentRateValue = $currentRate->{$validated['currency']."_rate"};
-            $convertedAmmount = intval($validated['amount']) / $currentRateValue ;
-        } else {
-            $convertedAmmount = $validated['amount'];
-        }
-
-        if($validated['transaction']=='debit'){
-            $balance->usd = $balance->usd + $convertedAmmount;
-        } elseif ($validated['transaction']=='credit' && ($balance->usd - $convertedAmmount) > 0){
-            $balance->usd = $balance->usd - $convertedAmmount;
-        } else {
-            return ResponseHelper::createErrorResponse('Insufficient balance to perform the debit transaction.', 400);
+        try {
+            $balance = $this->operationService->executeOperation($validated, $balance, $convertedAmount);
+        } catch (\Exception $e) {
+            return ResponseHelper::createErrorResponse($e->getMessage(), 400);
         }
 
         // DB Transaction secure
