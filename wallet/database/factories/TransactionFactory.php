@@ -20,6 +20,8 @@ class TransactionFactory extends Factory
             'balance_id'=> rand(1,15),
             'transaction_type'=> $this->faker->randomElement(['debit', 'credit']),
             'amount'=> rand(1,2000),
+            'rate' => rand(90,100),
+            'balance'=> rand(1,2000),
             'currency'=> $this->faker->randomElement(['usd', 'rub']),
             'issue'=> $this->faker->randomElement(['refund', 'stock', 'renunciation']),
         ];

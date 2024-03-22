@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\DatabaseManager as DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use App\Services\ExtraTransactionDataService;
 
 /**
  * Class BalanceUpdateService.
@@ -13,17 +14,20 @@ class BalanceUpdateService
 {
     protected $db;
     protected $cache;
+    protected $extraData;
 
-    public function __construct(DB $db, Cache $cache)
+    public function __construct(DB $db, Cache $cache, ExtraTransactionDataService $extraData)
     {
         $this->db = $db;
         $this->cache = $cache;
+        $this->extraData = $extraData;
     }
 
-    public function createTransaction($balance, $transactionData, $validated)
+    public function createTransaction($balance, $transactionData, $validated, $rate)
     {
         try {
-            $transaction = $this->db->transaction(function () use ($balance, $transactionData, $validated) {
+            $transaction = $this->db->transaction(function () use ($balance, $transactionData, $validated, $rate) {
+                $transactionData = $this->extraData->addBalanceAndRate($transactionData, $balance, $rate);
                 $transaction = $balance->newTransaction($transactionData);
                 $balance->save();
 

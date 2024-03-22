@@ -28,10 +28,13 @@ class ConvertService
             if ($convertedAmount < 1) {
                 throw new \Exception('The converted amount is less than the minimum allowed value.');
             }
-
-            return $convertedAmount;
         } else {
-            return $validated['amount'];
+            $currentRateValue = 1;
+            $convertedAmount = $validated['amount'];
         }
+        return [
+            'rate' => $currentRateValue,
+            'amount' => $convertedAmount
+        ];
     }
 }

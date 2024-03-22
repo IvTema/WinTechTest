@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property integer $id
  * @property integer $balance_id
  * @property string $transaction_type
- * @property float $amount
+ * @property integer $amount
+ * @property integer $rate
+ * @property integer $balance
  * @property string $currency
  * @property string $issue
  * @property string $created_at
@@ -23,7 +25,7 @@ class Transaction extends Model
     /**
      * @var array
      */
-    protected $fillable = ['balance_id', 'transaction_type', 'amount', 'currency', 'issue'];
+    protected $fillable = ['balance_id', 'transaction_type', 'amount', 'rate', 'balance', 'currency', 'issue'];
 
     public function balance(): BelongsTo
     {
