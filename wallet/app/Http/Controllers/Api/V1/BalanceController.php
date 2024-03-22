@@ -59,7 +59,9 @@ class BalanceController extends Controller
 
         $transactionData = TransactionHelper::transformToTransactionArray($validated);
 
-        $convertedAmount = $this->convertService->convertCurrency($transactionData, $validated);
+        $convertationValue = $this->convertService->convertCurrency($transactionData, $validated);
+        $convertationRate = $convertationValue['rate'];
+        $convertedAmount = $convertationValue['amount'];
 
         try {
             $balance = $this->operationService->executeOperation($validated, $balance, $convertedAmount);
@@ -68,7 +70,7 @@ class BalanceController extends Controller
         }
 
         // DB Transaction secure
-        $transaction = $this->balanceUpdateService->createTransaction($balance, $transactionData, $validated);
+        $transaction = $this->balanceUpdateService->createTransaction($balance, $transactionData, $validated, $convertationRate);
 
         return TransactionHelper::createTransactionResponse($transaction, $balance);
     }
