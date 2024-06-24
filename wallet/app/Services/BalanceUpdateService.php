@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Transaction;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\DatabaseManager as DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -23,7 +24,7 @@ class BalanceUpdateService
         $this->extraData = $extraData;
     }
 
-    public function createTransaction($balance, $transactionData, $validated, $rate)
+    public function createTransaction($balance, $transactionData, $validated, $rate) : Transaction
     {
         try {
             $transaction = $this->db->transaction(function () use ($balance, $transactionData, $validated, $rate) {
@@ -38,7 +39,7 @@ class BalanceUpdateService
                 return $transaction;
             });
         } catch (\Exception $e) {
-            throw new HttpException(500, 'Database error in balance update and transaction creation.'.$e);
+            throw new HttpException(500, 'Database error in balance update and transaction creation. '.$e);
         }
 
         return $transaction;

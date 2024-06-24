@@ -68,13 +68,6 @@ Write an SQL query that returns the sum received due to a refund in the last 7 d
     --header 'Authorization: Bearer #PLACE FOR TOKEN#'
     ```
 
-4. **Executing an SQL Query to Retrieve Total Refund Amount for the Last 7 Days:**
-
-    ```bash
-    curl --location 'localhost/api/v1/refund' \
-    --header 'Accept: application/json' \
-    --header 'Authorization: Bearer #PLACE FOR TOKEN#'
-    ```
 
 ### SQL Query:
 
