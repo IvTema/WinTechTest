@@ -3,10 +3,11 @@
 namespace App\Helpers;
 
 use App\Http\Resources\BalanceStatusResource;
+use Illuminate\Http\JsonResponse;
 
 class TransactionHelper
 {
-    public static function createTransactionResponse($transaction, $balance)
+    public static function createTransactionResponse($transaction, $balance): JsonResponse
     {
         return response()->json([
             'message' => 'Transaction created successfully',

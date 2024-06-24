@@ -14,55 +14,43 @@ use App\Services\ConvertService;
 use App\Services\OperationService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Contracts\Cache\Repository as Cache;
+use Illuminate\Http\JsonResponse;
 
-class BalanceController extends Controller
+class BalanceController extends Controller 
 {
-    protected $balanceUpdateService;
-    protected $convertService;
-    protected $operationService;
+    public function __construct(
+        protected BalanceUpdateService $balanceUpdateService,
+        protected ConvertService $convertService,
+        protected OperationService $operationService
+    ){}
 
-    public function __construct(BalanceUpdateService $balanceUpdateService, ConvertService $convertService, OperationService $operationService)
+    protected function getBalance(int $id, Cache $cache) : Balance
     {
-        $this->balanceUpdateService = $balanceUpdateService;
-        $this->convertService = $convertService;
-        $this->operationService = $operationService;
-    }
-
-    public static function index(IndexBalanceRequest $request, Cache $cache)
-    {
-        $validated = $request->validated();
-
-        $balance = $cache->rememberForever('balances:id_'.$validated['id'], function () use ($validated) {
+        return $cache->rememberForever('balances:id_'.$id, function () use ($id) {
             try {
-                $balance = Balance::findOrFail($validated['id']);
+                $balance = Balance::findOrFail($id);
             } catch (ModelNotFoundException $e) {
-                throw new ModelNotFoundException('Balance not found');
+                throw $e('Balance not found');
             }
             return $balance;
         });
+    }
+
+    public static function index(IndexBalanceRequest $request, Cache $cache) : BalanceStatusResource
+    {
+        $validated = $request->validated();
+        $balance = self::getBalance($validated['id'], $cache);
 
         return new BalanceStatusResource($balance);
     }
 
-    public function update(UpdateBalanceRequest $request, Cache $cache)
+    public function update(UpdateBalanceRequest $request, Cache $cache) : JsonResponse
     {
         $validated = $request->validated();
-
-        $balance = $cache->rememberForever('balances:id_'.$validated['id'], function () use ($validated) {
-            try {
-                $balance = Balance::findOrFail($validated['id']);
-            } catch (ModelNotFoundException $e) {
-                throw new ModelNotFoundException('Balance not found');
-            }
-            return $balance;
-        });
+        $balance = self::getBalance($validated['id'], $cache);
 
         $transactionData = TransactionHelper::transformToTransactionArray($validated);
-
-        $convertationValue = $this->convertService->convertCurrency($transactionData, $validated);
-        $convertationRate = $convertationValue['rate'];
-        $convertedAmount = $convertationValue['amount'];
-
+        list($convertationRate, $convertedAmount) = $this->convertService->convertCurrency($transactionData, $validated);
         try {
             $balance = $this->operationService->executeOperation($validated, $balance, $convertedAmount);
         } catch (\Exception $e) {

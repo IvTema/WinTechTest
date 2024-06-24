@@ -16,7 +16,7 @@ class ConvertService
         $this->rate = $rate;
     }
 
-    public function convertCurrency($transactionData, $validated)
+    public function convertCurrency($transactionData, $validated) : array
     {
         $currentRate = $this->rate->getCurrentRate();
 

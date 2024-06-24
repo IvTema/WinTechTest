@@ -3,18 +3,17 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginUserRequest;
+use App\Http\Requests\RegisterUserRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 
 class UserAuthController extends Controller
 {
-    public function register(Request $request){
-        $registerUserData = $request->validate([
-            'name'=>'required|string',
-            'email'=>'required|string|email|unique:users',
-            'password'=>'required|min:8'
-        ]);
+    public function register(RegisterUserRequest $request) : JsonResponse
+    {
+        $registerUserData = $request->validated();
         $user = User::create([
             'name' => $registerUserData['name'],
             'email' => $registerUserData['email'],
@@ -25,11 +24,9 @@ class UserAuthController extends Controller
         ]);
     }
 
-    public function login(Request $request){
-        $loginUserData = $request->validate([
-            'email'=>'required|string|email',
-            'password'=>'required|min:8'
-        ]);
+    public function login(LoginUserRequest $request) : JsonResponse
+    {
+        $loginUserData = $request->validated();
         $user = User::where('email',$loginUserData['email'])->first();
         if(!$user || !Hash::check($loginUserData['password'],$user->password)){
             return response()->json([
@@ -42,7 +39,8 @@ class UserAuthController extends Controller
         ]);
     }
 
-    public function logout(){
+    public function logout() : JsonResponse
+    {
         auth()->user()->tokens()->delete();
     
         return response()->json([
